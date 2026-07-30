@@ -1,0 +1,11 @@
+{
+  "version": "1.0",
+  "services": {
+    "web": {
+      "port": 3000,
+      "health": {
+        "command": "curl -f http://localhost:3000/api/heartbeat || exit 1"
+      }
+    }
+  }
+}

@@ -92,6 +92,12 @@ docker compose up -d
 
 ---
 
+## 💿 Deploying with Disco
+
+The repository includes a Disco service manifest for self-hosting on your own infrastructure. See [DISCO.md](DISCO.md) for the server, database, environment variable, and deployment setup.
+
+---
+
 ## 🔄 Getting Updates
 
 To get the latest features, simply do a pull, install any new dependencies, and rebuild:
