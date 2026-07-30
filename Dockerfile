@@ -58,6 +58,11 @@ RUN echo {} > package.json
 
 RUN printf "allowBuilds:\n  '@prisma/engines': true\n  prisma: false\nverifyDepsBeforeRun: false\n" > pnpm-workspace.yaml
 
+# Prisma may update its engine files while applying migrations at startup.
+# Install runtime dependencies as the same unprivileged user that runs the app.
+RUN chown nextjs:nodejs /app /app/package.json /app/pnpm-workspace.yaml
+USER nextjs
+
 # Script dependencies
 RUN pnpm add npm-run-all dotenv chalk semver \
     prisma@${PRISMA_VERSION} \
@@ -81,8 +86,6 @@ COPY --from=builder /app/generated ./generated
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
 
 EXPOSE 3000
 
