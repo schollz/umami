@@ -1,6 +1,7 @@
 'use client';
 import { Icon, Row } from '@umami/react-zen';
-import { useNavigation } from '@/components/hooks';
+import { useNavigation } from '@/components/hooks/useNavigation';
+import { useWebsiteSwitch } from '@/components/hooks/useWebsiteSwitch';
 import { Slash } from '@/components/icons';
 import { BoardSelect } from '@/components/input/BoardSelect';
 import { LinkSelect } from '@/components/input/LinkSelect';
@@ -10,6 +11,7 @@ import { WebsiteSelect } from '@/components/input/WebsiteSelect';
 
 export function TopNav() {
   const { websiteId, linkId, pixelId, boardId, teamId, router, renderUrl } = useNavigation();
+  const { switchWebsite, isSwitching } = useWebsiteSwitch();
 
   const navigateToEntity = (basePath: string, value: string | number | null) => {
     if (value === null || value === undefined || value === '') {
@@ -17,10 +19,6 @@ export function TopNav() {
     }
 
     router.push(renderUrl(`${basePath}/${value}`, false));
-  };
-
-  const handleWebsiteChange = (value: string | number | null) => {
-    navigateToEntity('/websites', value);
   };
 
   const handleLinkChange = (value: string | number | null) => {
@@ -59,7 +57,10 @@ export function TopNav() {
               <WebsiteSelect
                 websiteId={websiteId}
                 teamId={teamId}
-                onChange={handleWebsiteChange}
+                onChange={switchWebsite}
+                optimisticSelection={false}
+                isLoading={isSwitching}
+                isDisabled={isSwitching}
                 buttonProps={{
                   variant: 'quiet',
                   style: { minHeight: 40, minWidth: 200, maxWidth: 200 },

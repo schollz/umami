@@ -119,6 +119,7 @@ export const labels: Record<string, string> = {
   queryParameters: 'label.query-parameters',
   back: 'label.back',
   visitors: 'label.visitors',
+  estYearlyUsers: 'label.est-yearly-users',
   visits: 'label.visits',
   filterCombined: 'label.filter-combined',
   filterRaw: 'label.filter-raw',
@@ -430,6 +431,7 @@ export const labels: Record<string, string> = {
 };
 
 export const messages: Record<string, string> = {
+  estYearlyUsersDescription: 'message.est-yearly-users-description',
   error: 'message.error',
   saved: 'message.saved',
   noUsers: 'message.no-users',

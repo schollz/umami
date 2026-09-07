@@ -3,7 +3,7 @@ import { isAfter } from 'date-fns';
 import { useMemo } from 'react';
 import { useDateRange, useDateRangeQuery, useMessages, useNavigation } from '@/components/hooks';
 import { ChevronRight } from '@/components/icons';
-import { getDateRangeValue } from '@/lib/date';
+import { getAllTimeDateRangeValue, getDateRangeValue } from '@/lib/date';
 import { DateFilter } from './DateFilter';
 
 export interface WebsiteDateFilterProps {
@@ -35,10 +35,10 @@ export function WebsiteDateFilter({
   const hasData = startDate && endDate;
 
   const handleChange = (date: string) => {
-    if (date === 'all' && hasData) {
+    if (date === 'all') {
       router.push(
         updateParams({
-          date: `${getDateRangeValue(websiteDateRange.startDate, websiteDateRange.endDate)}:all`,
+          date: getAllTimeDateRangeValue(startDate, endDate),
           offset: undefined,
           page: 1,
         }),
@@ -81,7 +81,7 @@ export function WebsiteDateFilter({
         className="min-w-[200px]"
         value={dateValue}
         onChange={handleChange}
-        showAllTime={hasData && showAllTime}
+        showAllTime={isAllTime || (!!hasData && showAllTime)}
         renderDate={+offset !== 0}
       />
       {showCompare && (

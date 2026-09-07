@@ -39,6 +39,7 @@ import {
   subYears,
 } from 'date-fns';
 import { toZonedTime } from 'date-fns-tz';
+import { DEFAULT_RESET_DATE } from '@/lib/constants';
 import { getDateLocale } from '@/lib/lang';
 import type { DateRange } from '@/lib/types';
 
@@ -382,6 +383,18 @@ export function generateTimeSeries(
 
 export function getDateRangeValue(startDate: Date, endDate: Date) {
   return `range:${startDate.getTime()}:${endDate.getTime()}`;
+}
+
+export function getAllTimeDateRangeValue(startDate?: Date | string, endDate?: Date | string) {
+  const minimum = new Date(DEFAULT_RESET_DATE);
+  const start = startDate ? new Date(startDate) : minimum;
+  const end = endDate ? new Date(endDate) : new Date();
+
+  // Empty ClickHouse aggregates can return epoch dates instead of nulls.
+  const hasRange =
+    Number.isFinite(+start) && Number.isFinite(+end) && end >= start && end >= minimum;
+
+  return `${getDateRangeValue(hasRange ? start : minimum, hasRange ? end : new Date())}:all`;
 }
 
 export function getMonthDateRangeValue(date: Date) {

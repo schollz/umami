@@ -387,6 +387,7 @@
     "views-per-visit": "Views per visit",
     "visit-duration": "Visit duration",
     "visitors": "Visitors",
+    "est-yearly-users": "Est yearly users",
     "visits": "Visits",
     "website": "Website",
     "website-id": "Website ID",
@@ -425,6 +426,7 @@
     "two-factor-login": "Two-factor authentication"
   },
   "message": {
+    "est-yearly-users-description": "Visitors divided by elapsed days in the selected range, multiplied by 365, using at least one day and excluding future days. Assumes steady traffic; returning visitors may be counted again.",
     "action-confirmation": "Type {confirmation} in the box below to confirm.",
     "active-users": "{x} current {x, plural, one {visitor} other {visitors}}",
     "bad-request": "Bad request",

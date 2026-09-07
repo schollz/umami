@@ -15,6 +15,8 @@ export function WebsiteSelect({
   onChange,
   includeTeams,
   isCollapsed,
+  optimisticSelection = true,
+  isLoading: isPending = false,
   buttonProps,
   listProps,
   ...props
@@ -23,6 +25,7 @@ export function WebsiteSelect({
   teamId?: string;
   includeTeams?: boolean;
   isCollapsed?: boolean;
+  optimisticSelection?: boolean;
 } & SelectProps) {
   const { t, labels, messages } = useMessages();
   const { data: website } = useWebsiteQuery(websiteId);
@@ -48,7 +51,9 @@ export function WebsiteSelect({
   };
 
   const handleChange = (id: string) => {
-    setName(listItems.find(item => item.id === id)?.name);
+    if (optimisticSelection) {
+      setName(listItems.find(item => item.id === id)?.name);
+    }
     onChange(id);
   };
 
@@ -75,7 +80,7 @@ export function WebsiteSelect({
     <Select
       {...props}
       value={websiteId}
-      isLoading={isLoading}
+      isLoading={isLoading || isPending}
       allowSearch={true}
       searchValue={search}
       onSearch={handleSearch}

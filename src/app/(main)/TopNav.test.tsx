@@ -1,14 +1,9 @@
-import { beforeEach, expect, test, vi } from 'vitest';
+import { expect, test, vi } from 'vitest';
+import { getTestRouter } from '@/test/navigation';
 import { render, screen } from '@/test/render';
 import { TopNav } from './TopNav';
 
-const mockPush = vi.fn();
-const mockRenderUrl = vi.fn((path: string) => path);
-const mockUseNavigation = vi.fn();
-
-vi.mock('@/components/hooks', () => ({
-  useNavigation: () => mockUseNavigation(),
-}));
+const route = '/websites/11111111-1111-4111-8111-111111111111';
 
 vi.mock('@/components/input/TeamsButton', () => ({
   TeamsButton: () => <div>TeamsButton</div>,
@@ -39,36 +34,18 @@ vi.mock('@/components/input/BoardSelect', () => ({
   BoardSelect: () => null,
 }));
 
-beforeEach(() => {
-  mockPush.mockReset();
-  mockRenderUrl.mockClear();
-  mockUseNavigation.mockReturnValue({
-    websiteId: 'website-1',
-    linkId: undefined,
-    pixelId: undefined,
-    boardId: undefined,
-    teamId: undefined,
-    router: {
-      push: mockPush,
-    },
-    renderUrl: mockRenderUrl,
-  });
-});
-
 test('does not navigate when the website select emits null', async () => {
-  const { user } = render(<TopNav />);
+  const { user } = render(<TopNav />, { route });
 
   await user.click(screen.getByRole('button', { name: 'clear website' }));
 
-  expect(mockRenderUrl).not.toHaveBeenCalled();
-  expect(mockPush).not.toHaveBeenCalled();
+  expect(getTestRouter().push).not.toHaveBeenCalled();
 });
 
 test('navigates when the website select emits a website id', async () => {
-  const { user } = render(<TopNav />);
+  const { user } = render(<TopNav />, { route });
 
   await user.click(screen.getByRole('button', { name: 'select website' }));
 
-  expect(mockRenderUrl).toHaveBeenCalledWith('/websites/website-2', false);
-  expect(mockPush).toHaveBeenCalledWith('/websites/website-2');
+  expect(getTestRouter().push).toHaveBeenCalledWith('/websites/website-2');
 });
