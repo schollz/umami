@@ -1,4 +1,6 @@
-ARG NODE_IMAGE_VERSION="22-alpine"
+# syntax=docker/dockerfile:1
+
+ARG NODE_IMAGE_VERSION="22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402"
 ARG PNPM_VERSION="11.21.0"
 # Keep in sync with the prisma/@prisma/* versions in package.json
 ARG PRISMA_VERSION="7.9.1"
@@ -32,39 +34,20 @@ ENV DATABASE_URL="postgresql://user:pass@localhost:5432/dummy"
 
 RUN npm run build-docker
 
-# Production image, copy all the files and run next
-FROM node:${NODE_IMAGE_VERSION} AS runner
+# Install startup and migration dependencies outside the final image. Copying
+# only node_modules leaves pnpm, its store, and download caches in this stage.
+FROM node:${NODE_IMAGE_VERSION} AS runtime-deps
 WORKDIR /app
-
-ARG NODE_OPTIONS
 ARG PNPM_VERSION
 ARG PRISMA_VERSION
 
-ENV NODE_ENV=production
-ENV NEXT_TELEMETRY_DISABLED=1
-ENV NODE_OPTIONS=$NODE_OPTIONS
-
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-# Bootstrap pnpm with the bundled npm, then remove npm in the same layer so the
-# vulnerable packages vendored inside the npm CLI are not shipped in the final
-# image. pnpm is the only package manager needed at build and runtime.
-RUN set -x \
-    && apk add --no-cache curl libc6-compat \
-    && npm install -g pnpm@${PNPM_VERSION} \
-    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
-
+RUN apk add --no-cache libc6-compat \
+    && npm install -g pnpm@${PNPM_VERSION}
 RUN echo {} > package.json
-
 RUN printf "allowBuilds:\n  '@prisma/engines': true\n  prisma: false\nverifyDepsBeforeRun: false\n" > pnpm-workspace.yaml
 
-# Prisma may update its engine files while applying migrations at startup.
-# Install runtime dependencies as the same unprivileged user that runs the app.
-RUN chown nextjs:nodejs /app /app/package.json /app/pnpm-workspace.yaml
-USER nextjs
-
-# Script dependencies
-RUN pnpm add npm-run-all dotenv chalk semver \
+# start-docker.sh invokes Node directly, so npm-run-all is build-only.
+RUN pnpm add dotenv chalk semver \
     prisma@${PRISMA_VERSION} \
     @prisma/client@${PRISMA_VERSION} \
     @prisma/adapter-pg@${PRISMA_VERSION}
@@ -75,6 +58,24 @@ RUN pnpm add npm-run-all dotenv chalk semver \
 # as the non-root user and fail with a permissions error.
 RUN ls node_modules/.pnpm/@prisma+engines@${PRISMA_VERSION}/node_modules/@prisma/engines/*engine* \
     || (echo "ERROR: Prisma engine binaries missing - @prisma/engines postinstall was blocked" && exit 1)
+
+# Production image: Node, traced application files, and migration dependencies.
+FROM node:${NODE_IMAGE_VERSION} AS runner
+WORKDIR /app
+ARG NODE_OPTIONS
+
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
+ENV NODE_OPTIONS=$NODE_OPTIONS
+
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 nextjs \
+    && apk add --no-cache curl libc6-compat \
+    && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx \
+    && chown nextjs:nodejs /app
+
+# Prisma must retain writable engine files when migrations run as nextjs.
+COPY --from=runtime-deps --chown=nextjs:nodejs /app/node_modules ./node_modules
 
 COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 COPY --from=builder /app/prisma ./prisma
@@ -87,6 +88,7 @@ COPY --from=builder /app/generated ./generated
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
+USER nextjs
 EXPOSE 3000
 
 ENV HOSTNAME=0.0.0.0

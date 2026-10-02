@@ -3,6 +3,12 @@ docker-compose.yml
 Dockerfile
 .DS_Store
 node_modules
+.next
+.pnpm-store
+coverage
+playwright-report
+test-results
+*.log
 .idea
 .env
 .env.*
