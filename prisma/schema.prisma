@@ -154,6 +154,8 @@ model WebsiteEvent {
   @@index([visitId])
   @@index([websiteId])
   @@index([websiteId, createdAt])
+  // Covers summary and chart queries without fetching event rows from the heap.
+  @@index([websiteId, createdAt, sessionId, visitId, eventType], map: "website_event_stats_cover_idx")
   @@index([websiteId, createdAt, urlPath])
   @@index([websiteId, createdAt, urlQuery])
   @@index([websiteId, createdAt, referrerDomain])
