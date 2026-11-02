@@ -7,10 +7,15 @@ import type { QueryFilters } from '@/lib/types';
 const FUNCTION_NAME = 'getPageviewStats';
 
 export async function getPageviewStats(...args: [websiteId: string, filters: QueryFilters]) {
-  return runQuery({
+  const data: { x: string; pageviews: number; sessions: number }[] = await runQuery({
     [PRISMA]: () => relationalQuery(...args),
     [CLICKHOUSE]: () => clickhouseQuery(...args),
   });
+
+  return {
+    pageviews: data.map(({ x, pageviews }) => ({ x, y: pageviews })),
+    sessions: data.map(({ x, sessions }) => ({ x, y: sessions })),
+  };
 }
 
 async function relationalQuery(websiteId: string, filters: QueryFilters) {
@@ -26,7 +31,8 @@ async function relationalQuery(websiteId: string, filters: QueryFilters) {
     `
     select
       ${getDateSQL('website_event.created_at', unit, timezone)} x,
-      count(*) y
+      count(*) as pageviews,
+      count(distinct website_event.session_id) as sessions
     from website_event
     ${cohortQuery}
     ${excludeBounceQuery}
@@ -46,7 +52,7 @@ async function relationalQuery(websiteId: string, filters: QueryFilters) {
 async function clickhouseQuery(
   websiteId: string,
   filters: QueryFilters,
-): Promise<{ x: string; y: number }[]> {
+): Promise<{ x: string; pageviews: number; sessions: number }[]> {
   const { timezone = 'UTC', unit = 'day' } = filters;
   const { parseFilters, rawQuery, getDateSQL } = clickhouse;
   const { filterQuery, cohortQuery, excludeBounceQuery, queryParams } = parseFilters({
@@ -60,11 +66,13 @@ async function clickhouseQuery(
     sql = `
     select
       g.t as x,
-      g.y as y
+      g.pageviews,
+      g.sessions
     from (
       select
         ${getDateSQL('website_event.created_at', unit, timezone)} as t,
-        count(*) as y
+        count(*) as pageviews,
+        count(distinct session_id) as sessions
       from website_event
       ${cohortQuery}
       ${excludeBounceQuery}
@@ -80,11 +88,13 @@ async function clickhouseQuery(
     sql = `
     select
       g.t as x,
-      g.y as y
+      g.pageviews,
+      g.sessions
     from (
       select
         ${getDateSQL('website_event.created_at', unit, timezone)} as t,
-        sum(views) as y
+        sum(views) as pageviews,
+        uniq(session_id) as sessions
       from website_event_stats_hourly as website_event
       ${cohortQuery}
       ${excludeBounceQuery}

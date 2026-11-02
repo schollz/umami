@@ -28,9 +28,10 @@ export function LoadingPanel({
   ...props
 }: LoadingPanelProps): ReactNode {
   const empty = isEmpty ?? checkEmpty(data);
+  const hasData = data !== undefined && data !== null;
 
   // Show loading spinner only if no data exists
-  if (isLoading || isFetching) {
+  if (!hasData && (isLoading || isFetching)) {
     return (
       <Column position="relative" height="100%" width="100%" {...props}>
         <Loading icon={loadingIcon} placement={loadingPlacement} />
@@ -39,17 +40,17 @@ export function LoadingPanel({
   }
 
   // Show error
-  if (error) {
+  if (error && !hasData) {
     return <ErrorMessage />;
   }
 
   // Show empty state (once loaded)
-  if (!error && !isLoading && !isFetching && empty) {
+  if (empty) {
     return renderEmpty();
   }
 
   // Show main content when data exists
-  if (!isLoading && !isFetching && !error && !empty) {
+  if (hasData || (!isLoading && !isFetching && !error)) {
     return children;
   }
 

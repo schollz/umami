@@ -53,30 +53,27 @@ beforeEach(() => {
   getQueryFiltersMock.mockResolvedValue(filters);
 });
 
-test('starts both periods before either query completes and preserves their response fields', async () => {
+test('finishes the current period before starting the comparison to limit database load', async () => {
   const current = Promise.withResolvers<WebsiteStatsData>();
-  const previous = Promise.withResolvers<WebsiteStatsData>();
   const comparison = { ...stats, pageviews: 75, visitors: 30 };
-  getWebsiteStatsMock.mockReturnValueOnce(current.promise).mockReturnValueOnce(previous.promise);
+  getWebsiteStatsMock.mockReturnValueOnce(current.promise).mockResolvedValueOnce(comparison);
 
   const responsePromise = requestStats();
 
   try {
-    // The second query must start even while the first one remains unresolved.
-    await vi.waitFor(() => expect(getWebsiteStatsMock).toHaveBeenCalledTimes(2));
-    const { startDate, endDate } = getCompareDate('prev', filters.startDate, filters.endDate);
+    await vi.waitFor(() => expect(getWebsiteStatsMock).toHaveBeenCalledTimes(1));
     expect(getWebsiteStatsMock).toHaveBeenNthCalledWith(1, 'website-1', filters);
-    expect(getWebsiteStatsMock).toHaveBeenNthCalledWith(2, 'website-1', {
-      ...filters,
-      startDate,
-      endDate,
-    });
   } finally {
-    previous.resolve(comparison);
     current.resolve(stats);
   }
 
   const response = await responsePromise;
+  const { startDate, endDate } = getCompareDate('prev', filters.startDate, filters.endDate);
+  expect(getWebsiteStatsMock).toHaveBeenNthCalledWith(2, 'website-1', {
+    ...filters,
+    startDate,
+    endDate,
+  });
   expect(response.status).toBe(200);
   await expect(response.json()).resolves.toEqual({ ...stats, comparison });
 });

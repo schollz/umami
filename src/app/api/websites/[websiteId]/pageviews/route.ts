@@ -3,7 +3,7 @@ import { getQueryFilters, parseRequest } from '@/lib/request';
 import { json, unauthorized } from '@/lib/response';
 import { filterParams, withDateRange } from '@/lib/schema';
 import { canViewWebsiteSection } from '@/permissions';
-import { getPageviewStats, getSessionStats } from '@/queries/sql';
+import { getPageviewStats } from '@/queries/sql';
 
 export async function GET(
   request: Request,
@@ -27,10 +27,7 @@ export async function GET(
 
   const filters = await getQueryFilters(query, websiteId);
 
-  const [pageviews, sessions] = await Promise.all([
-    getPageviewStats(websiteId, filters),
-    getSessionStats(websiteId, filters),
-  ]);
+  const { pageviews, sessions } = await getPageviewStats(websiteId, filters);
 
   if (filters.compare) {
     const { startDate: compareStartDate, endDate: compareEndDate } = getCompareDate(
@@ -39,18 +36,14 @@ export async function GET(
       filters.endDate,
     );
 
-    const [comparePageviews, compareSessions] = await Promise.all([
-      getPageviewStats(websiteId, {
+    const { pageviews: comparePageviews, sessions: compareSessions } = await getPageviewStats(
+      websiteId,
+      {
         ...filters,
         startDate: compareStartDate,
         endDate: compareEndDate,
-      }),
-      getSessionStats(websiteId, {
-        ...filters,
-        startDate: compareStartDate,
-        endDate: compareEndDate,
-      }),
-    ]);
+      },
+    );
 
     return json({
       pageviews,
