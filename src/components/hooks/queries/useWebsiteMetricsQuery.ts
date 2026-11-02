@@ -17,6 +17,9 @@ export function useWebsiteMetricsQuery(
   const { get, useQuery } = useApi();
   const { startAt, endAt } = useDateParameters();
   const filters = useFilterParameters();
+  // The table and map use the same country totals. Keep the full result in the
+  // query cache and apply each table's row limit only to its selected data.
+  const queryParams = params.type === 'country' ? { ...params, limit: 500 } : params;
 
   return useQuery<WebsiteMetricsData>({
     queryKey: [
@@ -26,7 +29,7 @@ export function useWebsiteMetricsQuery(
         startAt,
         endAt,
         ...filters,
-        ...params,
+        ...queryParams,
       },
     ],
     queryFn: async () =>
@@ -34,10 +37,14 @@ export function useWebsiteMetricsQuery(
         startAt,
         endAt,
         ...filters,
-        ...params,
+        ...queryParams,
       }),
     enabled: !!websiteId,
     placeholderData: keepPreviousData,
+    select:
+      params.type === 'country' && params.limit !== undefined
+        ? data => data.slice(0, params.limit)
+        : undefined,
     ...options,
   });
 }
